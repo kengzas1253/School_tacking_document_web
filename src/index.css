@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+* {
+  font-family: 'Sarabun', sans-serif !important;
+}
+.fa, .fas, .far, .fab, .fal, .fad, [class^="fa-"], [class*=" fa-"] {
+  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands', icon !important;
+}
