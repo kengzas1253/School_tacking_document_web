@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { AuthForm } from './components/AuthForm';
+import { AdminAuthForm } from './components/AdminAuthForm';
 import { RegisterPage } from './components/RegisterPage';
 import { TrackDashboard } from './components/TrackDashboard';
 import { FooterPage } from './components/FooterPage';
@@ -8,7 +10,8 @@ import './index.css';
 
 type View = 'register' | 'dashboard';
 
-function App() {
+// ===== หน้าหลัก (User) =====
+function MainApp() {
   const [isRegister, setIsRegister] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -59,13 +62,9 @@ function App() {
   if (user) {
     return (
       <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
-
-        {/* ===== Navbar (เดียว) ===== */}
         <header className="bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-lg sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 md:px-8">
             <div className="flex items-center justify-between h-16">
-
-              {/* Logo + ชื่อระบบ */}
               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentView('register')}>
                 <div className="p-2 bg-white bg-opacity-20 rounded-lg">
                   <i className="fa-solid fa-certificate text-xl"></i>
@@ -76,15 +75,12 @@ function App() {
                 </div>
               </div>
 
-              {/* Right: email + ปุ่มต่าง ๆ */}
               <div className="flex items-center gap-2 md:gap-3">
-                {/* Email ผู้ใช้ */}
                 <div className="hidden sm:flex items-center gap-2 bg-white bg-opacity-10 border border-white border-opacity-20 px-3 py-1.5 rounded-lg">
                   <i className="fa-solid fa-circle-user text-blue-200"></i>
                   <span className="text-sm text-white max-w-[180px] truncate">{user?.email}</span>
                 </div>
 
-                {/* Dashboard ติดตามสถานะ */}
                 <button
                   onClick={() => setCurrentView('dashboard')}
                   className={`inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg border transition-all duration-150 ${
@@ -97,7 +93,6 @@ function App() {
                   <span className="hidden md:inline">Dashboard ติดตามสถานะ</span>
                 </button>
 
-                {/* บันทึกหนังสือ (แสดงเมื่ออยู่หน้า dashboard) */}
                 {currentView === 'dashboard' && (
                   <button
                     onClick={() => setCurrentView('register')}
@@ -108,7 +103,6 @@ function App() {
                   </button>
                 )}
 
-                {/* ออกจากระบบ */}
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg border bg-white bg-opacity-10 hover:bg-red-500 hover:border-red-400 text-white border-white border-opacity-30 transition-all duration-150"
@@ -121,13 +115,8 @@ function App() {
           </div>
         </header>
 
-        {/* ===== Page Content ===== */}
         <main className="flex-1">
-          {currentView === 'register' ? (
-            <RegisterPage />
-          ) : (
-            <TrackDashboard />
-          )}
+          {currentView === 'register' ? <RegisterPage /> : <TrackDashboard />}
         </main>
 
         <FooterPage />
@@ -135,7 +124,7 @@ function App() {
     );
   }
 
-  // Not logged in — show AuthForm
+  // Not logged in
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
       <div className="flex-1 flex items-center justify-center px-4 py-8 md:py-12">
@@ -148,6 +137,21 @@ function App() {
       </div>
       <FooterPage />
     </div>
+  );
+}
+
+// ===== Root App พร้อม Router =====
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* ✅ หน้า Admin Login */}
+        <Route path="/admin/login" element={<AdminAuthForm />} />
+
+        {/* ✅ หน้าหลัก (ทุก path อื่น) */}
+        <Route path="*" element={<MainApp />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

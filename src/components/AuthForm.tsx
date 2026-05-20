@@ -13,7 +13,6 @@ export function AuthForm() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ตรวจสอบ domain email โรงเรียน
     if (!email.toLowerCase().endsWith("@spa2.ac.th") && !adminEmail) {
       Swal.fire({
         icon: "warning",
@@ -27,10 +26,7 @@ export function AuthForm() {
     setLoading(true);
 
     if (isRegister) {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signUp({ email, password });
 
       console.log("REGISTER DATA:", data);
       console.log("REGISTER ERROR:", error);
@@ -177,7 +173,6 @@ export function AuthForm() {
                       stroke="currentColor"
                       strokeWidth="4"
                     ></circle>
-
                     <path
                       className="opacity-75"
                       fill="currentColor"
@@ -223,6 +218,18 @@ export function AuthForm() {
           <span>Verified</span>
         </div>
       </div>
+
+      {/* ✅ Admin Login Link — เพิ่มตรงนี้ */}
+     <div className="mt-4 text-center">
+  <a
+    href="/admin/login"
+    className="text-xs text-slate-400 hover:text-slate-600 transition-colors duration-200 flex items-center justify-center gap-1"
+  >
+    <i className="fa-solid fa-shield-halved text-xs"></i>
+    เข้าสู่ระบบสำหรับผู้ดูแลระบบ
+  </a>
+</div>
+
     </div>
   );
 }
