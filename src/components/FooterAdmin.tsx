@@ -1,4 +1,4 @@
-export function FooterPage() {
+export function FooterAdmin() {
   return (
     <footer className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 text-slate-200 border-t border-slate-700">
       <div className="max-w-7xl mx-auto px-4 py-8">

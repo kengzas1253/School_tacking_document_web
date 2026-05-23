@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect  } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { supabase } from "../supabaseClient";
+
+
 // Test API
 //const url_api = "http://localhost:3000/documents/";
 const url_api = "https://school-tacking-document-back.onrender.com/documents/";
@@ -39,7 +41,46 @@ const getThailandISOString = () => {
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
+// แปลงชื่อไฟล์เป็น timestamp เพื่อหลีกเลี่ยงปัญหาชื่อภาษาไทย/อักขระพิเศษ
+// รูปแบบ: YYYYMMDD_HHmmss_mmm.ext  เช่น  20260522_180530_123.pdf
+const buildSafeFileName = (originalFile: File): string => {
+  const now = new Date();
+
+  // ดึงส่วนประกอบเวลาไทย (UTC+7)
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    year:   "numeric",
+    month:  "2-digit",
+    day:    "2-digit",
+    hour:   "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const get = (type: string) =>
+    parts.find((p) => p.type === type)?.value ?? "00";
+
+  const YYYY = get("year");
+  const MM   = get("month");
+  const DD   = get("day");
+  const HH   = String(Number(get("hour")) % 24).padStart(2, "0"); // กัน "24" กรณี midnight
+  const mm   = get("minute");
+  const ss   = get("second");
+  const ms   = String(now.getMilliseconds()).padStart(3, "0");
+
+  // ดึงนามสกุลไฟล์เดิม (ถ้าไม่มีให้ใช้ bin)
+  const ext = originalFile.name.includes(".")
+    ? originalFile.name.split(".").pop()!.toLowerCase()
+    : "bin";
+
+  return `${YYYY}${MM}${DD}_${HH}${mm}${ss}_${ms}.${ext}`;
+};
+
 export function RegisterPage() {
+  useEffect(() => {
+    document.title = 'หน้าลงทะเบียนติดตามหนังสือราชการ';
+  }, []); // ตั้งชื่อ title หน้าเว็บเมื่อโหลดครั้งแรก
   const [formData, setFormData] = useState<FormData>({
     docNum: "",
     docDate: "",
@@ -54,7 +95,7 @@ export function RegisterPage() {
   const [file, setFile] = useState<File | null>(null);
 
   const [fileName, setFileName] = useState(
-    "คลิกเพื่อเลือกไฟล์ หรือลากมาวางที่นี่ (ไม่เกิน 5MB)",
+    "คลิกเพื่อเลือกไฟล์.pdf หรือลากมาวางที่นี่ (ไม่เกิน 5MB)",
   );
 
   const [loading, setLoading] = useState(false);
@@ -105,7 +146,7 @@ export function RegisterPage() {
       }
 
       setFile(selectedFile);
-      setFileName(selectedFile.name);
+      setFileName(selectedFile.name); // แสดงชื่อไฟล์เดิมให้ผู้ใช้เห็น (UX)
     }
   };
 
@@ -130,24 +171,27 @@ export function RegisterPage() {
       }
 
       setFile(droppedFile);
-      setFileName(droppedFile.name);
+      setFileName(droppedFile.name); // แสดงชื่อไฟล์เดิมให้ผู้ใช้เห็น (UX)
     }
   };
 
   // upload file to supabase storage
+  // ชื่อไฟล์ที่ upload จะถูกเปลี่ยนเป็น timestamp เพื่อหลีกเลี่ยงปัญหาภาษาไทย
   const uploadFileToSupabase = async (
     file: File,
   ): Promise<string | null> => {
     try {
-      const timestamp = new Date().getTime();
+      // สร้างชื่อไฟล์ที่ปลอดภัย เช่น 20260522_180530_123.pdf
+      const safeFileName = buildSafeFileName(file);
+      const uploadPath   = `uploads/${safeFileName}`;
 
-      const uploadName = `${timestamp}_${file.name}`;
+      console.log("Original filename :", file.name);
+      console.log("Safe filename      :", safeFileName);
 
-      // IMPORTANT:
-      // bucket name ต้องตรงกับ Supabase
+      // IMPORTANT: bucket name ต้องตรงกับ Supabase
       const { error } = await supabase.storage
         .from("Documents-Bucket")
-        .upload(`uploads/${uploadName}`, file, {
+        .upload(uploadPath, file, {
           cacheControl: "3600",
           upsert: false,
         });
@@ -160,7 +204,7 @@ export function RegisterPage() {
       // get public url
       const { data } = supabase.storage
         .from("Documents-Bucket")
-        .getPublicUrl(`uploads/${uploadName}`);
+        .getPublicUrl(uploadPath);
 
       console.log("Public URL:", data.publicUrl);
 

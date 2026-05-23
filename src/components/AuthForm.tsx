@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import Swal from "sweetalert2";
 
@@ -7,17 +7,55 @@ export function AuthForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegister, setIsRegister] = useState(false);
-  const isSchoolEmail = email.endsWith("@spa2.ac.th");
-  const adminEmail = email.toLowerCase() === "kengzas1253@gmail.com";
+
+  useEffect(() => {
+    document.title = "หน้าเข้าสู่ระบบติดตามหนังสือราชการ";
+  }, []); // [] cแสดง title เมื่อ component ถูก mount เท่านั้น
+
+  // ✅ คำนวณค่าต่างๆ จาก email ปัจจุบัน
+  const emailLower = email.toLowerCase();
+  const isSchoolEmail = emailLower.endsWith("@spa2.ac.th");
+
+  // const adminEmails = new Set([
+  //   "kengzas1253@gmail.com",
+  //   "asiaminimart.shopnaka@gmail.com",
+  //   "bankuankob2023.school@gmail.com",
+  // ]);
+  const adminEmails = new Set(
+    import.meta.env.VITE_ADMIN_EMAILS?.split(",") || [],
+  );
+  //console.log("Admin Emails:", adminEmails);
+  const isAdmin = adminEmails.has(emailLower);
+
+  // ✅ ฟังก์ชันตรวจสอบว่าเป็นอีเมลนักเรียนหรือไม่ (ขึ้นต้นด้วยตัวเลข)
+  const isStudentEmail = (email: string): boolean => {
+    const localPart = email.toLowerCase().split("@")[0];
+    // ตรวจสอบว่าขึ้นต้นด้วยตัวเลข (อย่างน้อย 1 หลัก)
+    return /^\d/.test(localPart);
+  };
+
+  const isStudent = isSchoolEmail && isStudentEmail(email);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.toLowerCase().endsWith("@spa2.ac.th") && !adminEmail) {
+    // กรณีไม่ใช่อีเมลโรงเรียน และไม่ใช่แอดมิน
+    if (!isSchoolEmail && !isAdmin) {
       Swal.fire({
         icon: "warning",
         title: "อีเมลไม่ถูกต้อง",
         text: "อนุญาตเฉพาะอีเมลโรงเรียน @spa2.ac.th เท่านั้น",
+        confirmButtonColor: "#2563eb",
+      });
+      return;
+    }
+
+    // กรณีเป็นอีเมลโรงเรียนแต่นักเรียน (ขึ้นต้นด้วยตัวเลข)
+    if (isStudent && !isAdmin) {
+      Swal.fire({
+        icon: "warning",
+        title: "ไม่อนุญาต",
+        text: "ไม่อนุญาตให้นักเรียนที่มีอีเมลโรงเรียน @spa2.ac.th เข้าใช้งาน",
         confirmButtonColor: "#2563eb",
       });
       return;
@@ -28,8 +66,8 @@ export function AuthForm() {
     if (isRegister) {
       const { data, error } = await supabase.auth.signUp({ email, password });
 
-      console.log("REGISTER DATA:", data);
-      console.log("REGISTER ERROR:", error);
+      //console.log("REGISTER DATA:", data);
+      //console.log("REGISTER ERROR:", error);
 
       if (error) {
         Swal.fire({
@@ -52,8 +90,8 @@ export function AuthForm() {
         password,
       });
 
-      console.log("LOGIN DATA:", data);
-      console.log("LOGIN ERROR:", error);
+      //console.log("LOGIN DATA:", data);
+      //console.log("LOGIN ERROR:", error);
 
       if (error) {
         Swal.fire({
@@ -63,9 +101,9 @@ export function AuthForm() {
           confirmButtonColor: "#2563eb",
         });
       } else {
-        console.log("USER:", data.user);
-        console.log("SESSION:", data.session);
-        console.log("ACCESS TOKEN:", data.session?.access_token);
+        //console.log("USER:", data.user);
+        //console.log("SESSION:", data.session);
+        //console.log("ACCESS TOKEN:", data.session?.access_token);
 
         Swal.fire({
           icon: "success",
@@ -95,7 +133,7 @@ export function AuthForm() {
           </h1>
         </div>
 
-        <p className="text-slate-600 text-sm font-medium tracking-wide">
+        <p className="text-slate-600 text-xl font-medium tracking-wide">
           ระบบติดตามหนังสือราชการ
         </p>
       </div>
@@ -127,9 +165,17 @@ export function AuthForm() {
                 onChange={(e) => setEmail(e.target.value)}
               />
 
-              {email && !isSchoolEmail && (
+              {/* แสดงข้อความเตือนกรณีไม่ใช่อีเมลโรงเรียนและไม่ใช่แอดมิน */}
+              {email && !isSchoolEmail && !isAdmin && (
                 <p className="text-red-500 text-sm mt-1">
                   กรุณาใช้อีเมลโรงเรียน @spa2.ac.th
+                </p>
+              )}
+
+              {/* แสดงข้อความเตือนกรณีเป็นนักเรียน (ขึ้นต้นด้วยตัวเลข) */}
+              {email && isSchoolEmail && isStudent && !isAdmin && (
+                <p className="text-red-500 text-sm mt-1">
+                  ไม่อนุญาตให้นักเรียน (อีเมลขึ้นต้นด้วยตัวเลข) เข้าใช้งาน
                 </p>
               )}
             </div>
@@ -154,7 +200,7 @@ export function AuthForm() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (isStudent && !isAdmin)}
               className="w-full mt-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
               {loading ? (
@@ -219,17 +265,16 @@ export function AuthForm() {
         </div>
       </div>
 
-      {/* ✅ Admin Login Link — เพิ่มตรงนี้ */}
-     <div className="mt-4 text-center">
-  <a
-    href="/admin/login"
-    className="text-xs text-slate-400 hover:text-slate-600 transition-colors duration-200 flex items-center justify-center gap-1"
-  >
-    <i className="fa-solid fa-shield-halved text-xs"></i>
-    เข้าสู่ระบบสำหรับผู้ดูแลระบบ
-  </a>
-</div>
-
+      {/* Admin Login Link */}
+      <div className="mt-4 text-center">
+        <a
+          href="/admin/login"
+          className="text-xs text-slate-400 hover:text-slate-600 transition-colors duration-200 flex items-center justify-center gap-1"
+        >
+          <i className="fa-solid fa-shield-halved text-xs"></i>
+          เข้าสู่ระบบสำหรับผู้ดูแลระบบ
+        </a>
+      </div>
     </div>
   );
 }
