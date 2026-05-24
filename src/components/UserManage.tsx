@@ -77,8 +77,9 @@ export function UserManage() {
     setUpdatingId(user.id);
     try {
       const headers = await getAuthHeaders();
+      // Fixed: Changed from localhost to the correct API endpoint
       const res = await fetch(
-        `http://localhost:4000/api/admin/user/${user.id}`,
+        `https://school-tacking-document-backv2.onrender.com/api/admin/user/${user.id}`,
         {
           method: "PUT",
           headers,
@@ -252,16 +253,16 @@ export function UserManage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wide">
-                  <th className="text-left px-5 py-3 font-semibold">#</th>
-                  <th className="text-left px-5 py-3 font-semibold">อีเมล</th>
-                  <th className="text-left px-5 py-3 font-semibold">สิทธิ์</th>
-                  <th className="text-left px-5 py-3 font-semibold hidden md:table-cell">
+                  <th className="text-left px-3 py-3 font-semibold w-8">#</th>
+                  <th className="text-left px-3 py-3 font-semibold">อีเมล</th>
+                  <th className="text-left px-3 py-3 font-semibold w-20">สิทธิ์</th>
+                  <th className="text-left px-5 py-3 font-semibold hidden md:table-cell w-36">
                     วันที่สมัคร
                   </th>
-                  <th className="text-left px-5 py-3 font-semibold">
+                  <th className="text-left px-3 py-3 font-semibold w-24">
                     เปลี่ยนสิทธิ์
                   </th>
                 </tr>
@@ -272,20 +273,23 @@ export function UserManage() {
                     key={user.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-5 py-4 text-gray-400 font-mono">
+                    <td className="px-3 py-4 text-gray-400 font-mono">
                       {idx + 1}
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
+                    <td className="px-5 py-4 max-w-[140px] md:max-w-xs">
+                      <div className="flex items-center gap-2 min-w-0">
                         <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold shrink-0">
                           {user.email.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-gray-800 break-all">
+                        <span
+                          className="text-gray-800 truncate block"
+                          title={user.email}
+                        >
                           {user.email}
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-4">
                       {user.role === "admin" ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
                           <i className="fa-solid fa-shield-halved text-[10px]"></i>
@@ -301,7 +305,7 @@ export function UserManage() {
                     <td className="px-5 py-4 text-gray-400 text-xs hidden md:table-cell whitespace-nowrap">
                       {formatDate(user.created_at)}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-4">
                       <div className="flex items-center gap-2">
                         <select
                           value={user.role}
