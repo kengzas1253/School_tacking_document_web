@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import { AuthForm } from "./components/AuthForm";
 import AdminDashboard from "./components/AdminDashboard";
@@ -13,7 +13,6 @@ type View = "register" | "dashboard";
 
 // ===== หน้าหลัก (User) =====
 function MainApp() {
-  const [isRegister, setIsRegister] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>("register");
@@ -37,8 +36,6 @@ function MainApp() {
 
     return () => subscription?.unsubscribe();
   }, []);
-
-  const handleToggleRegister = () => setIsRegister(!isRegister);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -157,10 +154,7 @@ function MainApp() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
       <div className="flex-1 flex items-center justify-center px-4 py-8 md:py-12">
         <div className="w-full max-w-md">
-          <AuthForm
-            onToggleRegister={handleToggleRegister}
-            isRegister={isRegister}
-          />
+          <AuthForm />
         </div>
       </div>
       <FooterPage />

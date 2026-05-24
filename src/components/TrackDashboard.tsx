@@ -133,7 +133,8 @@ export function TrackDashboard() {
 
   // ── Fetch ─────────────────────────────────────────────────
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    //let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     const fetchData = async () => {
       try {

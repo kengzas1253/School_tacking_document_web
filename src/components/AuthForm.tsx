@@ -64,8 +64,8 @@ export function AuthForm() {
     setLoading(true);
 
     if (isRegister) {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-
+      // const { data, error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email, password });
       //console.log("REGISTER DATA:", data);
       //console.log("REGISTER ERROR:", error);
 
@@ -85,7 +85,8 @@ export function AuthForm() {
         });
       }
     } else {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
