@@ -22,7 +22,7 @@ const getAuthHeaders = async (): Promise<HeadersInit> => {
 export function UserManage() {
   useEffect(() => {
     document.title = "จัดการผู้ใช้งาน - ระบบติดตามหนังสือราชการ";
-  }, []); // ตั้งชื่อ title หน้าเว็บเมื่อโหลดครั้งแรก
+  }, []);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -35,9 +35,7 @@ export function UserManage() {
       const headers = await getAuthHeaders();
       const res = await fetch(
         "https://school-tacking-document-backv2.onrender.com/api/admin/user",
-        {
-          headers,
-        },
+        { headers },
       );
       if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
       const data: User[] = await res.json();
@@ -77,7 +75,6 @@ export function UserManage() {
     setUpdatingId(user.id);
     try {
       const headers = await getAuthHeaders();
-      // Fixed: Changed from localhost to the correct API endpoint
       const res = await fetch(
         `https://school-tacking-document-backv2.onrender.com/api/admin/user/${user.id}`,
         {
@@ -128,6 +125,38 @@ export function UserManage() {
     const matchRole = filterRole === "all" || u.role === filterRole;
     return matchSearch && matchRole;
   });
+
+  const RoleBadge = ({ role }: { role: "user" | "admin" }) =>
+    role === "admin" ? (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+        <i className="fa-solid fa-shield-halved text-[10px]"></i>
+        Admin
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
+        <i className="fa-solid fa-user text-[10px]"></i>
+        User
+      </span>
+    );
+
+  const RoleSelect = ({ user }: { user: User }) => (
+    <div className="flex items-center gap-2">
+      <select
+        value={user.role}
+        disabled={updatingId === user.id}
+        onChange={(e) =>
+          handleRoleChange(user, e.target.value as "user" | "admin")
+        }
+        className="text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
+      >
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      {updatingId === user.id && (
+        <i className="fa-solid fa-circle-notch fa-spin text-gray-400 text-xs"></i>
+      )}
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto">
@@ -191,7 +220,6 @@ export function UserManage() {
 
       {/* Search & Filter */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
           <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
           <input
@@ -210,8 +238,6 @@ export function UserManage() {
             </button>
           )}
         </div>
-
-        {/* Filter buttons */}
         <div className="flex items-center gap-2">
           <i className="fa-solid fa-filter text-gray-400 text-sm"></i>
           {(["all", "user", "admin"] as const).map((role) => (
@@ -239,7 +265,7 @@ export function UserManage() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* List */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -252,85 +278,89 @@ export function UserManage() {
             <p className="text-sm">ไม่พบข้อมูลผู้ใช้</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-fixed">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wide">
-                  <th className="text-left px-3 py-3 font-semibold w-8">#</th>
-                  <th className="text-left px-3 py-3 font-semibold">อีเมล</th>
-                  <th className="text-left px-3 py-3 font-semibold w-20">สิทธิ์</th>
-                  <th className="text-left px-5 py-3 font-semibold hidden md:table-cell w-36">
-                    วันที่สมัคร
-                  </th>
-                  <th className="text-left px-3 py-3 font-semibold w-24">
-                    เปลี่ยนสิทธิ์
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user, idx) => (
-                  <tr
-                    key={user.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-3 py-4 text-gray-400 font-mono">
-                      {idx + 1}
-                    </td>
-                    <td className="px-5 py-4 max-w-[140px] md:max-w-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold shrink-0">
-                          {user.email.charAt(0).toUpperCase()}
-                        </div>
-                        <span
-                          className="text-gray-800 truncate block"
-                          title={user.email}
-                        >
+          <>
+            {/* Mobile: Card layout */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filteredUsers.map((user, idx) => (
+                <div key={user.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-bold shrink-0 mt-0.5">
+                        {user.email.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-gray-800 text-sm font-medium break-all leading-snug">
                           {user.email}
-                        </span>
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          #{idx + 1} · {formatDate(user.created_at)}
+                        </p>
                       </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      {user.role === "admin" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-                          <i className="fa-solid fa-shield-halved text-[10px]"></i>
-                          Admin
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
-                          <i className="fa-solid fa-user text-[10px]"></i>
-                          User
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-gray-400 text-xs hidden md:table-cell whitespace-nowrap">
-                      {formatDate(user.created_at)}
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={user.role}
-                          disabled={updatingId === user.id}
-                          onChange={(e) =>
-                            handleRoleChange(
-                              user,
-                              e.target.value as "user" | "admin",
-                            )
-                          }
-                          className="text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        {updatingId === user.id && (
-                          <i className="fa-solid fa-circle-notch fa-spin text-gray-400 text-xs"></i>
-                        )}
-                      </div>
-                    </td>
+                    </div>
+                    <div className="shrink-0">
+                      <RoleBadge role={user.role} />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 pl-12">
+                    <span className="text-xs text-gray-400">
+                      เปลี่ยนสิทธิ์:
+                    </span>
+                    <RoleSelect user={user} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Table layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wide">
+                    <th className="text-left px-5 py-3 font-semibold">#</th>
+                    <th className="text-left px-5 py-3 font-semibold">อีเมล</th>
+                    <th className="text-left px-5 py-3 font-semibold">
+                      สิทธิ์
+                    </th>
+                    <th className="text-left px-5 py-3 font-semibold">
+                      วันที่สมัคร
+                    </th>
+                    <th className="text-left px-5 py-3 font-semibold">
+                      เปลี่ยนสิทธิ์
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user, idx) => (
+                    <tr
+                      key={user.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-5 py-4 text-gray-400 font-mono">
+                        {idx + 1}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold shrink-0">
+                            {user.email.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-gray-800">{user.email}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <RoleBadge role={user.role} />
+                      </td>
+                      <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">
+                        {formatDate(user.created_at)}
+                      </td>
+                      <td className="px-5 py-4">
+                        <RoleSelect user={user} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
